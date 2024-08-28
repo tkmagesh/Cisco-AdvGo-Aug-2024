@@ -22,7 +22,7 @@
 - No dedicated Q & A time
 
 ## Repository
-- https://github.com/tkmagesh/cisco-advgo-nov-2024
+- https://github.com/tkmagesh/Cisco-AdvGo-Aug-2024
 
 ## Prerequisites
 - Data Types, Variables, Constants, iota
@@ -38,8 +38,10 @@
 - Modules & Packages
 
 ## Agenda
+- Recap
 - Concurrency
 - Adv Concurreny Patterns
+- Context
 - Database programming choices
 - HTTP Services
 - GRPC Services
@@ -47,3 +49,7 @@
 - Micro benchmarking
 - Profiling
 
+## Recap
+- Higher Order Functions
+- iota
+- interfaces
