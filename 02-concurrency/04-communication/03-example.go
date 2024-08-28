@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 func main() {
 	// ver 1.0
@@ -31,9 +34,14 @@ func main() {
 
 	// ver 4.0
 	ch := make(chan int)
-	ch <- 100
 	// receiving and printing has to happen in a goroutine
-	data := <-ch
-	fmt.Println(data)
-
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		data := <-ch
+		fmt.Println(data)
+	}()
+	ch <- 100
+	wg.Wait()
 }
