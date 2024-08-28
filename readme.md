@@ -53,3 +53,30 @@
 - Higher Order Functions
 - iota
 - interfaces
+
+## Concurrency
+
+## Concurrency Programming
+- Designing the application with more than one execution path
+- Achieved using OS Threads
+- Scheduling Strategies
+    - Cooperative Multitasking
+    - Pre-emptive Multitasking
+- OS Threads are costly
+    - ~2MB of memory
+    - thread Context switch are costly
+    - creating & destroying
+
+## Go Concurrency Model
+- Built-in scheduler 
+- Concurrent operations are represented as Goroutines
+- Goroutines are cheap (~4KB)
+- Support for concurrency is built in the language
+    - "go" keyword, "channel" data type, channel "<-" operator, range & select-case constructs
+- Standard Library Packages
+    - "sync" package
+    - "sync/atomic" package
+
+### sync.WaitGroup
+- semaphore based counter
+- has the ability to block the execution of a function until the counter becomes 0
