@@ -6,9 +6,7 @@ interfaces
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"strings"
 )
 
@@ -38,20 +36,47 @@ func (ps *ProductService) GetAll() []Product {
 }
 
 // ver 2.0
+/* Violation of Dependency Inversion Principle */
+/*
 type ProductCSVSerializer struct {
-	/* ? */
+	productService *ProductService
 }
 
-func NewProductCSVSerializer(/* ? */) *ProductCSVSerializer {
+func NewProductCSVSerializer(ps *ProductService) *ProductCSVSerializer {
 	return &ProductCSVSerializer{
-		/* ? */
+		productService: ps,
 	}
 }
 
 func (pSerializer *ProductCSVSerializer) Serialize() string {
 	builder := strings.Builder{}
 	var products []Product
-	products := // get the products from the source
+	products = pSerializer.productService.GetAll()
+	for _, p := range products {
+		builder.WriteString(fmt.Sprintf("%d,%q,%0.2f\n", p.Id, p.Name, p.Cost))
+	}
+	return builder.String()
+}
+*/
+
+type IProductService interface {
+	GetAll() []Product
+}
+
+type ProductCSVSerializer struct {
+	productService IProductService
+}
+
+func NewProductCSVSerializer(ps IProductService) *ProductCSVSerializer {
+	return &ProductCSVSerializer{
+		productService: ps,
+	}
+}
+
+func (pSerializer *ProductCSVSerializer) Serialize() string {
+	builder := strings.Builder{}
+	var products []Product
+	products = pSerializer.productService.GetAll()
 	for _, p := range products {
 		builder.WriteString(fmt.Sprintf("%d,%q,%0.2f\n", p.Id, p.Name, p.Cost))
 	}
@@ -59,6 +84,7 @@ func (pSerializer *ProductCSVSerializer) Serialize() string {
 }
 
 func main() {
-	productSerializer := // create the instance of ProductCSVSerializer
+	ps := NewProductService()
+	productSerializer := NewProductCSVSerializer(ps)
 	fmt.Println(productSerializer.Serialize())
 }
