@@ -36,9 +36,8 @@ func genNos(stopCh chan os.Signal) <-chan int {
 				signal.Stop(stopCh)
 				fmt.Println("stop signal received")
 				break LOOP
-			default:
+			case nosCh <- i:
 				time.Sleep(500 * time.Millisecond)
-				fmt.Println("no :", i)
 			}
 		}
 		close(nosCh)
