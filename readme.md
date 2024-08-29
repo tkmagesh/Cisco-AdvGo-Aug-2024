@@ -131,3 +131,6 @@ data := <- ch
 - context.WithValue(parentCtx, key, value)
     - to share data across contexts in the hierarchy
     - non cancellable
+
+## Http Services
+- net/http package
