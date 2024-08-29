@@ -112,4 +112,22 @@ ch <- 100
 // OR
 data := <- ch
 ```
-
+## Context
+- cancellation propagation
+- context object instances implement interface context.Context
+### Context Factory APIs
+- context.Background()
+    - top most context without any parent
+    - non-cancellable
+- context.WithCancel(parentCtx)
+    - programmatic cancellation
+- context.WithTimeout(parentCtx, relative time)
+    - time (relative) based cancellation
+    - also supports programmatic cancellation
+    - wrapper on context.WithDeadline()
+- context.WithDeadline(parentCtx, abosulte time)
+    - time (absolute) based cancellation
+    - also supports programmatic cancellation
+- context.WithValue(parentCtx, key, value)
+    - to share data across contexts in the hierarchy
+    - non cancellable
