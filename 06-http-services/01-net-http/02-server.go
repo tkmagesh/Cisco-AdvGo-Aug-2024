@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -42,7 +43,8 @@ func (appServer *AppServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // application specific logic
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Hello, World!")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	fmt.Fprintln(w, "{\"response\" : \"Hello, World!\"}")
 }
 
 func ProductsHandler(w http.ResponseWriter, r *http.Request) {
@@ -68,13 +70,21 @@ func ProductsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func CustomersHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "All the customers will be served")
+	fmt.Fprintln(w, "{\"response\" : \"All the customers will be served\"}")
+}
+
+// middlewares
+func logMiddleware(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s - %s\n", r.Method, r.URL.Path)
+		next(w, r)
+	}
 }
 
 func main() {
 	appServer := NewAppServer()
-	appServer.AddRoute("/", IndexHandler)
-	appServer.AddRoute("/products", ProductsHandler)
-	appServer.AddRoute("/customers", CustomersHandler)
+	appServer.AddRoute("/", logMiddleware(IndexHandler))
+	appServer.AddRoute("/products", logMiddleware(ProductsHandler))
+	appServer.AddRoute("/customers", logMiddleware(CustomersHandler))
 	http.ListenAndServe(":8080", appServer)
 }
