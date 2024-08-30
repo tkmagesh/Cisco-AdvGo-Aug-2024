@@ -134,3 +134,10 @@ data := <- ch
 
 ## Http Services
 - net/http package
+
+## Database programming
+- database/sql
+- sqlx [https://github.com/jmoiron/sqlx]
+    - open source wrapper for database/sql
+- code generators (ex: sqlc [https://docs.sqlc.dev/en/latest/overview/])
+- ORM (ex: gorm [https://gorm.io/])
