@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"time"
@@ -43,6 +44,31 @@ func (asi *AppServiceServerImpl) GeneratePrimes(req *proto.PrimeRequest, serverS
 			}
 			time.Sleep(300 * time.Millisecond)
 		}
+	}
+	return nil
+}
+
+func (as *AppServiceServerImpl) CalculateAverage(serverStream proto.AppService_CalculateAverageServer) error {
+	var total, count int64
+LOOP:
+	for {
+		req, err := serverStream.Recv()
+		if err == io.EOF {
+			avg := float32(total / count)
+			fmt.Println("sending response, avg :", avg)
+			res := &proto.AverageResponse{
+				Average: avg,
+			}
+			serverStream.SendAndClose(res)
+			break LOOP
+		}
+		if err != nil {
+			log.Fatalln(err)
+		}
+		no := req.GetNo()
+		fmt.Println("average req, no :", no)
+		total += no
+		count++
 	}
 	return nil
 }

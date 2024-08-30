@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"time"
 
 	"github.com/tkmagesh/cisco-advgo-aug-2024/09-grpc-app/proto"
 
@@ -21,7 +22,31 @@ func main() {
 	appServiceClient := proto.NewAppServiceClient(clientConn)
 	ctx := context.Background()
 	// doRequestResponse(ctx, appServiceClient)
-	doServerStreaming(ctx, appServiceClient)
+	// doServerStreaming(ctx, appServiceClient)
+	doClientStreaming(ctx, appServiceClient)
+}
+
+func doClientStreaming(ctx context.Context, appServiceClient proto.AppServiceClient) {
+	nos := []int64{3, 5, 4, 2, 6, 8, 7, 9, 1}
+	clientStream, err := appServiceClient.CalculateAverage(ctx)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	for _, no := range nos {
+		time.Sleep(500 * time.Millisecond)
+		fmt.Println("Average req, no : ", no)
+		req := &proto.AverageRequest{
+			No: no,
+		}
+		if err := clientStream.Send(req); err != nil {
+			log.Fatalln()
+		}
+	}
+	if res, err := clientStream.CloseAndRecv(); err == nil {
+		fmt.Println("average :", res.GetAverage())
+	} else {
+		log.Fatalln(err)
+	}
 }
 
 func doServerStreaming(ctx context.Context, appServiceClient proto.AppServiceClient) {
