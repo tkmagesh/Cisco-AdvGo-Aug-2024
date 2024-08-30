@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
+	"time"
 
 	"github.com/tkmagesh/cisco-advgo-aug-2024/09-grpc-app/proto"
 
@@ -27,6 +29,32 @@ func (asi *AppServiceServerImpl) Add(ctx context.Context, req *proto.AddRequest)
 	return res, nil
 }
 
+func (asi *AppServiceServerImpl) GeneratePrimes(req *proto.PrimeRequest, serverStream proto.AppService_GeneratePrimesServer) error {
+	start := req.GetStart()
+	end := req.GetEnd()
+	fmt.Printf("[GeneratePrimes] start = %d and end = %d\n", start, end)
+	for no := start; no <= end; no++ {
+		if isPrime(no) {
+			res := &proto.PrimeResponse{
+				PrimeNo: no,
+			}
+			if err := serverStream.Send(res); err != nil {
+				log.Fatalln(err)
+			}
+			time.Sleep(300 * time.Millisecond)
+		}
+	}
+	return nil
+}
+
+func isPrime(no int64) bool {
+	for i := int64(2); i <= (no / 2); i++ {
+		if no%i == 0 {
+			return false
+		}
+	}
+	return true
+}
 func main() {
 	asi := &AppServiceServerImpl{}
 	listener, err := net.Listen("tcp", ":50051")
