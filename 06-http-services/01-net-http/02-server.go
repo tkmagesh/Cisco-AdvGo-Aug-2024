@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
+	"time"
 )
 
 type Product struct {
@@ -43,8 +46,13 @@ func (appServer *AppServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // application specific logic
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	fmt.Fprintln(w, "{\"response\" : \"Hello, World!\"}")
+	time.Sleep(7 * time.Second)
+	var response = make(map[string]any)
+	response["trace-id"] = r.Context().Value("trace-id")
+	response["response"] = "Hello,World!"
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "data serialization error", http.StatusInternalServerError)
+	}
 }
 
 func ProductsHandler(w http.ResponseWriter, r *http.Request) {
@@ -76,15 +84,31 @@ func CustomersHandler(w http.ResponseWriter, r *http.Request) {
 // middlewares
 func logMiddleware(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s - %s\n", r.Method, r.URL.Path)
+		log.Printf("trace-id : %v - %s - %s\n", r.Context().Value("trace-id"), r.Method, r.URL.Path)
 		next(w, r)
+	}
+}
+
+func jsonMiddleware(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		next(w, r)
+	}
+}
+
+func traceMiddleware(next func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		traceId := rand.Intn(100)
+		traceCtx := context.WithValue(r.Context(), "trace-id", traceId)
+		reqWithTraceId := r.WithContext(traceCtx)
+		next(w, reqWithTraceId)
 	}
 }
 
 func main() {
 	appServer := NewAppServer()
-	appServer.AddRoute("/", logMiddleware(IndexHandler))
-	appServer.AddRoute("/products", logMiddleware(ProductsHandler))
-	appServer.AddRoute("/customers", logMiddleware(CustomersHandler))
+	appServer.AddRoute("/", traceMiddleware(logMiddleware(jsonMiddleware(IndexHandler))))
+	appServer.AddRoute("/products", traceMiddleware(logMiddleware(jsonMiddleware(ProductsHandler))))
+	appServer.AddRoute("/customers", traceMiddleware(logMiddleware(jsonMiddleware(CustomersHandler))))
 	http.ListenAndServe(":8080", appServer)
 }
