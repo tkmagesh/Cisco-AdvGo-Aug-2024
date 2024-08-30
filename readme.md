@@ -141,3 +141,43 @@ data := <- ch
     - open source wrapper for database/sql
 - code generators (ex: sqlc [https://docs.sqlc.dev/en/latest/overview/])
 - ORM (ex: gorm [https://gorm.io/])
+
+## GRPC
+- Uses http2
+- Building servers with realtime updates are easy
+- Less payload size
+- Uses Protocol Buffers for serialization
+    - Schema is shared in advance
+    - Payload contains ONLY the data 
+- Support for multiple languages
+- Well suited for micro-services
+- Communication patterns
+    - Request & Response
+    - Server Streaming (1 request & stream of responses)
+    - Client Streaming (stream of requests & 1 response)
+    - Bidirectional Streaming ( stream of requests & stream of responses)
+
+### Steps
+- Create a schema
+    - Service contracts
+    - Operation contracts
+    - Data (message) contracts
+- Generate the proxy & stub
+- In the server, implement the service and expose it using the stub
+- In the client, communicate to the server using the proxy
+
+### Tools
+1. Protocol Buffers Compiler (protoc tool)
+    Windows:
+        Download the file, extract and keep in a folder (PATH) accessble through the command line
+        https://github.com/protocolbuffers/protobuf/releases/download/v24.4/protoc-24.4-win64.zip
+    Mac:
+        brew install protobuf
+
+    Verification:
+        protoc --version
+
+2. Go plugins (installed in the GOPATH/bin folder)
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
+3. Make sure the GOPATH/bin is in the environment "path" configuration
