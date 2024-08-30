@@ -148,10 +148,10 @@ func main() {
 	appServer.UseMiddleware(timeoutMiddleware)
 	appServer.UseMiddleware(traceMiddleware)
 	appServer.UseMiddleware(logMiddleware)
-	appServer.UseMiddleware(jsonMiddleware)
+	// appServer.UseMiddleware(jsonMiddleware)
 
 	appServer.AddRoute("/", IndexHandler)
-	appServer.AddRoute("/products", ProductsHandler)
+	appServer.AddRoute("/products", jsonMiddleware(ProductsHandler))
 	appServer.AddRoute("/customers", CustomersHandler)
 	http.ListenAndServe(":8080", appServer)
 }
