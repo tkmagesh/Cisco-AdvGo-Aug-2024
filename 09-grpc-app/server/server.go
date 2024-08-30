@@ -32,6 +32,7 @@ func (asi *AppServiceServerImpl) Add(ctx context.Context, req *proto.AddRequest)
 	return res, nil
 }
 
+/*
 func (asi *AppServiceServerImpl) GeneratePrimes(req *proto.PrimeRequest, serverStream proto.AppService_GeneratePrimesServer) error {
 	start := req.GetStart()
 	end := req.GetEnd()
@@ -45,6 +46,36 @@ func (asi *AppServiceServerImpl) GeneratePrimes(req *proto.PrimeRequest, serverS
 				log.Fatalln(err)
 			}
 			time.Sleep(300 * time.Millisecond)
+		}
+	}
+	return nil
+}
+*/
+
+func (asi *AppServiceServerImpl) GeneratePrimes(req *proto.PrimeRequest, serverStream proto.AppService_GeneratePrimesServer) error {
+
+	// trying get the data from the client sent through the context
+	val := serverStream.Context().Value("serviceName")
+	fmt.Printf("serviceName : %v\n", val)
+
+	start := req.GetStart()
+	end := req.GetEnd()
+	log.Printf("[GeneratePrimes] Received req for generating primes from %d to %d\n", start, end)
+LOOP:
+	for no := start; no <= end; no++ {
+		if isPrime(no) {
+			res := &proto.PrimeResponse{
+				PrimeNo: no,
+			}
+			log.Printf("[GeneratePrimes] Sending prime no : %d\n", no)
+			if err := serverStream.Send(res); err != nil {
+				// log.Fatalln(err)
+				if code := status.Code(err); code == codes.Unavailable {
+					fmt.Println("Transport closed")
+					break LOOP
+				}
+			}
+			time.Sleep(500 * time.Millisecond)
 		}
 	}
 	return nil

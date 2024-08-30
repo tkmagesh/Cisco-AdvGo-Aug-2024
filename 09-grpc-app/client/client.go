@@ -10,7 +10,9 @@ import (
 	"github.com/tkmagesh/cisco-advgo-aug-2024/09-grpc-app/proto"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 func main() {
@@ -24,7 +26,8 @@ func main() {
 	// doRequestResponse(ctx, appServiceClient)
 	// doServerStreaming(ctx, appServiceClient)
 	// doClientStreaming(ctx, appServiceClient)
-	doBiDiStreaming(ctx, appServiceClient)
+	// doBiDiStreaming(ctx, appServiceClient)
+	doServerStreamingWithCancellation(ctx, appServiceClient)
 }
 
 func doBiDiStreaming(ctx context.Context, appServiceClient proto.AppServiceClient) /* <-chan struct{} */ {
@@ -98,6 +101,47 @@ func doClientStreaming(ctx context.Context, appServiceClient proto.AppServiceCli
 		fmt.Println("average :", res.GetAverage())
 	} else {
 		log.Fatalln(err)
+	}
+}
+
+func doServerStreamingWithCancellation(ctx context.Context, appServiceClient proto.AppServiceClient) {
+	primeReq := &proto.PrimeRequest{
+		Start: 2,
+		End:   100,
+	}
+
+	// trying to send data through context (will fail)
+	// Cannot send data through context across the wire
+	valCtx := context.WithValue(ctx, "serviceName", "GRPC Service")
+
+	// creating context with cancellation
+	cancelCtx, cancel := context.WithCancel(valCtx)
+	defer cancel()
+
+	clientStream, err := appServiceClient.GeneratePrimes(cancelCtx, primeReq)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+	fmt.Println("Hit ENTER to stop...!")
+	go func() {
+		fmt.Scanln()
+		cancel()
+	}()
+
+LOOP:
+	for {
+		res, err := clientStream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			if code := status.Code(err); code == codes.Canceled {
+				fmt.Println("Cancellation initiated")
+				break LOOP
+			}
+		}
+		fmt.Printf("Prime No : %d\n", res.GetPrimeNo())
 	}
 }
 
