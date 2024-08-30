@@ -22,8 +22,10 @@ var products []Product = []Product{
 	{103, "Marker", 50},
 }
 
+// Generalized server
 type AppServer struct {
-	routes map[string]http.HandlerFunc
+	routes      map[string]http.HandlerFunc
+	middlewares []func(func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request)
 }
 
 func NewAppServer() *AppServer {
@@ -33,7 +35,15 @@ func NewAppServer() *AppServer {
 }
 
 func (appServer *AppServer) AddRoute(pattern string, handler http.HandlerFunc) {
+	for i := len(appServer.middlewares) - 1; i >= 0; i-- {
+		middleware := appServer.middlewares[i]
+		handler = middleware(handler)
+	}
 	appServer.routes[pattern] = handler
+}
+
+func (appServer *AppServer) UseMiddleware(middleware func(func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request)) {
+	appServer.middlewares = append(appServer.middlewares, middleware)
 }
 
 func (appServer *AppServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -45,6 +55,26 @@ func (appServer *AppServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // application specific logic
+
+func IndexHandler(w http.ResponseWriter, r *http.Request) {
+	prepareIndexResponse(4 * time.Second)
+	fmt.Println("prepared response")
+	select {
+	case <-r.Context().Done():
+		return
+	default:
+		var response = make(map[string]any)
+		response["trace-id"] = r.Context().Value("trace-id")
+		response["response"] = "Hello,World!"
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "data serialization error", http.StatusInternalServerError)
+		}
+	}
+}
+
+func prepareIndexResponse(d time.Duration) {
+	time.Sleep(d)
+}
 
 func ProductsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -112,30 +142,16 @@ func timeoutMiddleware(next func(http.ResponseWriter, *http.Request)) func(http.
 	}
 }
 
-func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	prepareIndexResponse(15 * time.Second)
-	fmt.Println("prepared response")
-	select {
-	case <-r.Context().Done():
-		return
-	default:
-		var response = make(map[string]any)
-		response["trace-id"] = r.Context().Value("trace-id")
-		response["response"] = "Hello,World!"
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, "data serialization error", http.StatusInternalServerError)
-		}
-	}
-}
-
-func prepareIndexResponse(d time.Duration) {
-	time.Sleep(d)
-}
-
 func main() {
 	appServer := NewAppServer()
-	appServer.AddRoute("/", timeoutMiddleware(traceMiddleware(logMiddleware(jsonMiddleware(IndexHandler)))))
-	appServer.AddRoute("/products", timeoutMiddleware(traceMiddleware(logMiddleware(jsonMiddleware(ProductsHandler)))))
-	appServer.AddRoute("/customers", timeoutMiddleware(traceMiddleware(logMiddleware(jsonMiddleware(CustomersHandler)))))
+
+	appServer.UseMiddleware(timeoutMiddleware)
+	appServer.UseMiddleware(traceMiddleware)
+	appServer.UseMiddleware(logMiddleware)
+	appServer.UseMiddleware(jsonMiddleware)
+
+	appServer.AddRoute("/", IndexHandler)
+	appServer.AddRoute("/products", ProductsHandler)
+	appServer.AddRoute("/customers", CustomersHandler)
 	http.ListenAndServe(":8080", appServer)
 }
